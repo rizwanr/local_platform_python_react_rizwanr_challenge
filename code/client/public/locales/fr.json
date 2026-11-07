@@ -1,0 +1,199 @@
+{
+  "auth": {
+    "login": {
+      "email": "E-mail",
+      "sample_email": "jenny.rosen@example.com",
+      "password": "Mot de passe",
+      "continue": "Continuer",
+      "loading": "Chargement...",
+      "dont_have_an_account": "Vous n'avez pas de compte ?",
+      "sign_up": "S'inscrire",
+      "login": "Se connecter"
+    },
+    "loginas": {
+      "select": "Sélectionner un compte",
+      "dont_have_account": "Vous n'avez pas de compte ?",
+      "register": "S'inscrire",
+      "acct_id": "ID du compte",
+      "sample_acct_id": "acct_1234567890abcdef",
+      "continue": "Continuer",
+      "loading": "Soumission en cours..."
+    },
+    "signup": {
+      "sign_up": "S'inscrire",
+      "already_have_account": "Vous avez déjà un compte ?",
+      "login": "Se connecter",
+      "country": "Pays",
+      "email": "E-mail"
+    },
+    "layout": {
+      "manage": "Gérez votre studio en toute simplicité.",
+      "zenflow_is_leading": "ZenFlow est la plateforme de santé et de bien-être leader mondiale.",
+      "sign_up": "S'inscrire",
+      "fill_form": "Remplissez le formulaire pour configurer votre compte.",
+      "contact": "Contacter le support"
+    }
+  },
+  "countries": {
+    "australia": "Australie",
+    "austria": "Autriche",
+    "belgium": "Belgique",
+    "brazil": "Brésil",
+    "bulgaria": "Bulgarie",
+    "canada": "Canada",
+    "croatia": "Croatie",
+    "cyprus": "Chypre",
+    "czech_republic": "République tchèque",
+    "denmark": "Danemark",
+    "estonia": "Estonie",
+    "finland": "Finlande",
+    "france": "France",
+    "germany": "Allemagne",
+    "ghana": "Ghana",
+    "gibraltar": "Gibraltar",
+    "greece": "Grèce",
+    "hong_kong": "Hong Kong",
+    "hungary": "Hongrie",
+    "indonesia": "Indonésie",
+    "ireland": "Irlande",
+    "italy": "Italie",
+    "japan": "Japon",
+    "kenya": "Kenya",
+    "latvia": "Lettonie",
+    "liechtenstein": "Liechtenstein",
+    "lithuania": "Lituanie",
+    "luxembourg": "Luxembourg",
+    "malaysia": "Malaisie",
+    "malta": "Malte",
+    "mexico": "Mexique",
+    "netherlands": "Pays-Bas",
+    "new_zealand": "Nouvelle-Zélande",
+    "nigeria": "Nigeria",
+    "norway": "Norvège",
+    "poland": "Pologne",
+    "portugal": "Portugal",
+    "romania": "Roumanie",
+    "singapore": "Singapour",
+    "slovakia": "Slovaquie",
+    "slovenia": "Slovénie",
+    "south_africa": "Afrique du Sud",
+    "spain": "Espagne",
+    "sweden": "Suède",
+    "switzerland": "Suisse",
+    "thailand": "Thaïlande",
+    "united_arab_emirates": "Émirats arabes unis",
+    "united_kingdom": "Royaume-Uni",
+    "united_states": "États-Unis"
+  },
+  "dashboard": {
+    "classes": {
+      "classes": "Cours",
+      "create_class": "Créer un cours",
+      "edit_studios": "Modifier les studios",
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "studio": "Studio"
+    },
+    "instructors": {
+      "instructors": "Instructeurs",
+      "add": "Ajouter un instructeur",
+      "class": "cours",
+      "es": "s",
+      "this_week": "cette semaine"
+    },
+    "payments": {
+      "payments": "Paiements",
+      "recent": "Paiements récents"
+    },
+    "payouts": {
+      "payouts": "Versements"
+    },
+    "welcome": "Bienvenue, {{name}} !",
+    "performance": "Performance",
+    "settings": {
+      "my_studio": "Mon studio",
+      "settings": "Paramètres",
+      "payment_methods": "Modes de paiement",
+      "sign_out": "se déconnecter",
+      "basic_details": "Détails de base",
+      "studio_name": "Nom du studio",
+      "practice": "Pratiquez un studio de yoga",
+      "email": "E-mail",
+      "account_settings": "Paramètres du compte",
+      "manage_account": "Gérer les paramètres du compte et de l'entreprise.",
+      "payment_methods_add": "Ajoutez et gérez vos méthodes de paiement.",
+      "tax_settings": "Paramètres fiscaux",
+      "tax_account": "Gérer les paramètres fiscaux et les inscriptions."
+    },
+    "finances": {
+      "financial_account": "Compte financier",
+      "transactions": "Transactions",
+      "cards": "Cartes",
+      "finances": "Finances",
+      "overview": "Aperçu"
+    }
+  },
+  "class": {
+    "gentle": "Flow doux",
+    "yoga_intermediate": "Yoga de base - Intermédiaire",
+    "mindful": "Mouvement en pleine conscience",
+    "stretch": "Étirement et restauration",
+    "yoga_core": "Yoga renforcement du centre"
+  },
+  "components": {
+    "month_to_date": {
+      "month_to_date": "Mois en cours"
+    },
+    "customers": {
+      "customers": "Clients"
+    },
+    "schedule": {
+      "attendees": "participants",
+      "today": "Programme d'aujourd'hui"
+    },
+    "balance": {
+      "total": "Solde total",
+      "payout": "Verser sur le compte bancaire",
+      "pending": "en attente"
+    },
+    "recent_payments": {
+      "recent": "Paiements récents",
+      "view_all": "Voir tout"
+    }
+  },
+  "loading": "Chargement...",
+  "studio": {
+    "1": "Studio 1",
+    "2": "Studio 2"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "classes": "Cours",
+    "instructors": "Instructeurs",
+    "payments": "Paiements",
+    "payouts": "Versements",
+    "finances": "Finances"
+  },
+  "checkout": {
+    "payment_status": {
+      "error": "Une erreur s'est produite avec votre paiement.",
+      "succeeded": "Le paiement a réussi !",
+      "processing": "Votre paiement est en cours de traitement...",
+      "requires_payment_method": "Votre paiement n'a pas abouti. Veuillez sélectionner une autre méthode de paiement et réessayer."
+    },
+    "address_header": "Adresse du client",
+    "payments_header": "Détails du paiement",
+    "elements": {
+      "orderSummary": "Récapitulatif de la commande",
+      "classCharge": "Frais de cours",
+      "tax": "Taxe",
+      "total": "Total",
+      "chargeCustomer": "Facturer le client",
+      "fee": "Frais"
+    }
+  },
+  "errors": {
+    "unable_to_create": "Cette plate-forme"
+  },
+  "unexpected_error": "Une erreur inattendue s'est produite. \nA-t-il été bien fait?"
+}

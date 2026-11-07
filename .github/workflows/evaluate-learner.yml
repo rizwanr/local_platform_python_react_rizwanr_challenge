@@ -1,0 +1,463 @@
+name: Evaluate implementation & deliver feedback
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+    branches: [main]
+
+env:
+  SERVER_DIR: ${{ github.workspace }}/head/code/server
+  CLIENT_DIR: ${{ github.workspace }}/head/code/client
+  TEST_DIR: ${{ github.workspace }}/head/test
+  PROGRESS_BRANCH_RESULTS_DIR: ${{ github.workspace }}/progress/test/results
+  E2E_TEST_STATUS: "not_started"
+  DEBUG: pw:webserver
+
+jobs:
+  wait-for-feedback:
+    name: Feedback incoming
+    runs-on: ubuntu-latest
+    if: github.head_ref == 'dev'
+    steps:
+      - name: Add info message re grading
+        run: |
+          echo "::notice title=💡 Feedback incoming!::When our assessment workflow finishes running, feedback about the requirements will be added to the bottom of this page.  You can also find it as a comment on your pull request.  Until we've delivered the feedback, please don't push again."
+
+  check-implementation:
+    name: Evaluate implementation
+    runs-on: ubuntu-latest
+    needs: [wait-for-feedback]
+    if: github.head_ref == 'dev'
+    strategy:
+      matrix:
+        node-version: [24]
+    outputs:
+      test-status: ${{ steps.test-results.outputs.status }}
+      date: ${{ steps.get-logs.outputs.date }}
+      logs: ${{ steps.get-logs.outputs.logs }}
+      tampered: ${{ steps.tamper-check.outputs.tampered }}
+      tampered-files: ${{ steps.tamper-check.outputs.tampered-files }}
+    steps:
+      - name: Fetch GitHub Token
+        id: fetch-token
+        run: |
+          TOKEN="$(npx obtain-github-app-installation-access-token ci ${{ secrets.WORKFLOW_TOKEN }})"
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Checkout Head
+        uses: actions/checkout@v4.1.0
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ steps.fetch-token.outputs.token }}
+          path: head
+
+      - name: Checkout Canonical Test Specs
+        uses: actions/checkout@v4.1.0
+        with:
+          repository: stripe-certification/platform_challenge
+          ref: main
+          token: ${{ steps.fetch-token.outputs.token }}
+          path: canonical
+          sparse-checkout: |
+            test/specs
+            test/helpers
+            test/tsconfig.json
+            test/playwright.config.ts
+            test/results/rubric.json
+            .github/workflows/evaluate-learner.yml
+
+      - name: Validate rubric/spec coverage
+        run: |
+          spec_ids=$(find canonical/test/specs -name "*.spec.ts" | xargs grep -h "test(" | grep -oE ":[0-9]+(\.[0-9]+[a-z]*)+" | sed "s/^://" | sort -u)
+          rubric_ids=$(jq -r '.items | keys[]' canonical/test/results/rubric.json | sort -u)
+          missing_from_rubric=$(comm -23 <(echo "$spec_ids") <(echo "$rubric_ids"))
+          missing_from_specs=$(comm -13 <(echo "$spec_ids") <(echo "$rubric_ids"))
+          if [ -n "$missing_from_rubric" ] || [ -n "$missing_from_specs" ]; then
+            echo "::error::Rubric/spec ID mismatch detected — grading is unreliable until this is fixed"
+            [ -n "$missing_from_rubric" ] && echo "::error::In specs but missing from rubric: $(echo $missing_from_rubric | tr '\n' ' ')"
+            [ -n "$missing_from_specs" ] && echo "::error::In rubric but missing from specs: $(echo $missing_from_specs | tr '\n' ' ')"
+            exit 1
+          fi
+          echo "✓ All spec IDs match rubric entries"
+
+      - name: Detect tampered files
+        id: tamper-check
+        run: |
+          tampered=false
+          tampered_files=""
+          for f in canonical/test/specs/*.spec.ts; do
+            fname=$(basename "$f")
+            learner_file="head/test/specs/$fname"
+            if [ -f "$learner_file" ] && ! cmp -s "$f" "$learner_file"; then
+              tampered=true
+              tampered_files="$tampered_files test/specs/$fname"
+              echo "::warning::test/specs/$fname was modified — this file must not be changed"
+            fi
+          done
+          for f in canonical/test/helpers/*.ts; do
+            fname=$(basename "$f")
+            learner_file="head/test/helpers/$fname"
+            if [ -f "$learner_file" ] && ! cmp -s "$f" "$learner_file"; then
+              tampered=true
+              tampered_files="$tampered_files test/helpers/$fname"
+              echo "::warning::test/helpers/$fname was modified — this file must not be changed"
+            fi
+          done
+          for config_file in tsconfig.json playwright.config.ts; do
+            if [ -f "canonical/test/$config_file" ] && ! cmp -s "canonical/test/$config_file" "head/test/$config_file"; then
+              tampered=true
+              tampered_files="$tampered_files test/$config_file"
+              echo "::warning::test/$config_file was modified — this file must not be changed"
+            fi
+          done
+          if [ -f "canonical/.github/workflows/evaluate-learner.yml" ] && ! cmp -s "canonical/.github/workflows/evaluate-learner.yml" "head/.github/workflows/evaluate-learner.yml"; then
+            tampered=true
+            tampered_files="$tampered_files .github/workflows/evaluate-learner.yml"
+            echo "::warning::.github/workflows/evaluate-learner.yml was modified — this file must not be changed"
+          fi
+          echo "tampered=$tampered" >> $GITHUB_OUTPUT
+          echo "tampered-files=$tampered_files" >> $GITHUB_OUTPUT
+
+      - name: Replace learner files with canonical versions
+        run: |
+          rsync -a --checksum --delete canonical/test/specs/ head/test/specs/
+          rsync -a --checksum canonical/test/helpers/ head/test/helpers/
+          cp canonical/test/tsconfig.json head/test/tsconfig.json
+          cp canonical/test/playwright.config.ts head/test/playwright.config.ts
+          cp canonical/.github/workflows/evaluate-learner.yml head/.github/workflows/evaluate-learner.yml
+
+      - name: Set Challenge Identifier
+        id: challenge-id
+        uses: stripe-certification/actions/.github/actions/unique-names-generator@v6
+        with:
+          seed: ${{ github.event.repository.name }}
+
+      - name: Setup Node v${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Detect Server Language
+        id: detect-lang
+        run: |
+          if [ -f requirements.txt ]; then
+            echo "lang=python" >> $GITHUB_OUTPUT
+          else
+            echo "lang=node" >> $GITHUB_OUTPUT
+          fi
+        working-directory: ${{ env.SERVER_DIR }}
+
+      - name: Setup Python (Python server)
+        if: steps.detect-lang.outputs.lang == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Create .env & set CI true
+        run: |
+          if [ ! -f .env ]; then cp .env.example .env; fi
+          sed -i.bak '/^STRIPE_SECRET_KEY=/s/=.*/=${{ secrets.STRIPE_SANDBOX_TEST_KEY_V2 }}/' .env
+          sed -i.bak '/^STRIPE_PUBLISHABLE_KEY=/s/=.*/=${{ secrets.STRIPE_SANDBOX_PUBLISHABLE_KEY_V2 }}/' .env
+          echo "CI=true" >> .env
+          echo "CHALLENGE_ID=${{ steps.challenge-id.outputs.name }}" >> .env
+        working-directory: ${{ env.SERVER_DIR }}
+
+      - name: Create Client .env
+        if: contains(github.repository, 'react')
+        run: |
+          if [ ! -f .env ]; then cp .env.example .env; fi
+          sed -i.bak '/^NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=/s/=.*/=${{ secrets.STRIPE_SANDBOX_PUBLISHABLE_KEY_V2 }}/' .env
+        working-directory: ${{ env.CLIENT_DIR }}
+
+      - name: Install Server Dependencies
+        run: sh ./install.sh
+        working-directory: ${{ env.SERVER_DIR }}
+
+      - name: Install React Dependencies
+        if: contains(github.repository, 'react')
+        run: |
+          rm -rf node_modules
+          rm -f package-lock.json
+          npm install
+        working-directory: ${{ env.CLIENT_DIR }}
+
+      - name: Install HTML Client Dependencies
+        if: contains(github.repository, 'html')
+        run: sh ./install.sh
+        working-directory: ${{ env.CLIENT_DIR }}
+
+      - name: Install Playwright Dependencies
+        run: npm install
+        working-directory: ${{ env.TEST_DIR }}
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: ${{ env.TEST_DIR }}
+        timeout-minutes: 15
+
+      - name: Install Stripe CLI
+        run: |
+          gh release download --pattern "*amd64.deb" --repo "stripe/stripe-cli"
+          sudo apt-get update
+          sudo apt install -y ./stripe*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ${{ env.SERVER_DIR }}
+
+      - name: Retrieve Stripe webhook Secret
+        id: webhook_secret
+        run: |
+          WH_SECRET="$(stripe listen --forward-to http://localhost:4242/webhook --forward-connect-to http://localhost:4242/webhook --print-secret --api-key ${{ secrets.STRIPE_SANDBOX_TEST_KEY_V2 }})"
+          echo "::add-mask::$WH_SECRET"
+          echo "whsecret=$WH_SECRET" >> $GITHUB_OUTPUT
+        working-directory: ${{ env.SERVER_DIR }}
+
+      - name: Update Environment file with Webhook Secret
+        run: |
+          sed -i.bak '/^STRIPE_WEBHOOK_SECRET=/s/=.*/=${{ steps.webhook_secret.outputs.whsecret }}\n/' .env
+        working-directory: ${{ env.SERVER_DIR }}
+
+      - name: Start Stripe Webhook listener
+        run: |
+          stripe listen --forward-to http://localhost:4242/webhook --forward-connect-to http://localhost:4242/webhook --events "v2.core.account.updated,checkout.session.completed,charge.dispute.created,charge.dispute.closed,customer.subscription.updated,customer.subscription.deleted" --api-key ${{ secrets.STRIPE_SANDBOX_TEST_KEY_V2 }} &
+        working-directory: ${{ env.SERVER_DIR }}
+
+      - name: Run Smoke Tests
+        id: smoke
+        run: npx playwright test ./specs/smoke.spec.ts
+        working-directory: ${{ env.TEST_DIR }}
+
+      - name: Get Log URL
+        if: always()
+        id: get-logs
+        run: |
+          logs=\
+          $( curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ steps.fetch-token.outputs.token }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs | jq -r '.jobs[0].html_url' )
+          date=$( date -u "+%b %d at %H:%M UTC" )
+          echo "logs=$logs" >> $GITHUB_OUTPUT
+          echo "date=$date" >> $GITHUB_OUTPUT
+
+      - name: Add PR Comment on Smoke Failure
+        if: ${{ always() && steps.smoke.outcome == 'failure' }}
+        uses: stripe-certification/actions/.github/actions/sync-feedback-comment@v6
+        env:
+          GITHUB_TOKEN: ${{ steps.fetch-token.outputs.token }}
+          AUTHOR: stripe-challenge-operator[bot]
+          CLEAN_NOISE: true
+          REPO: ${{ github.event.repository.name }}
+        with:
+          pull_request_id: ${{ github.event.pull_request.number }}
+          message: |
+            Tested ${{ github.event.pull_request.head.sha }} on ${{ steps.get-logs.outputs.date }} ([logs](${{ steps.get-logs.outputs.logs }}))
+
+            ### Smoke Tests Failed
+            Before you push your changes to the branch, ensure that the application is running without any errors in your local machine.
+            You can run the smoke tests by calling `npx playwright test ./specs/smoke.spec.ts` from the repo's `./test` directory.
+
+      - name: Checkout Progress Branch
+        uses: actions/checkout@v4.1.0
+        with:
+          repository: ${{ github.repository }}
+          ref: progress
+          token: ${{ steps.fetch-token.outputs.token }}
+          path: progress
+
+      - name: Parse Spec Name
+        run: |
+          SPEC=$(cat ${{ env.PROGRESS_BRANCH_RESULTS_DIR }}/learner_challenge_test_status.txt)
+          echo "SPEC_TO_BE_RUN=$SPEC" >> $GITHUB_ENV
+          MILESTONE=$(basename $SPEC .spec.ts)
+          echo "GRADING_SPEC_TO_BE_RUN=grading/${MILESTONE}.grading.spec.ts" >> $GITHUB_ENV
+
+      - name: Run Playwright tests
+        id: e2e-tests
+        run: npx playwright test ./specs/${{ env.SPEC_TO_BE_RUN }} ./specs/${{ env.GRADING_SPEC_TO_BE_RUN }}
+        working-directory: ${{ env.TEST_DIR }}
+
+      - name: Set Test Status
+        id: test-results
+        if: always()
+        run: |
+          if ${{ steps.e2e-tests.outcome == 'success' }}
+          then
+              echo "status=success" >> $GITHUB_OUTPUT
+          elif ${{ steps.e2e-tests.outcome == 'failure' }}
+          then
+              echo "status=failure" >> $GITHUB_OUTPUT
+          else
+              echo "status=not_started" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && steps.test-results.outputs.status != 'not_started' }}
+        with:
+          name: test-results
+          path: ${{ env.TEST_DIR }}/results/test-results.json
+
+  deliver-results:
+    name: Deliver feedback
+    runs-on: ubuntu-latest
+    needs: [check-implementation]
+    if: ${{ always() && github.head_ref == 'dev' && needs.check-implementation.outputs.test-status != 'not_started' }}
+    steps:
+      - name: Fetch GitHub Token
+        id: fetch-token
+        run: |
+          TOKEN="$(npx obtain-github-app-installation-access-token ci ${{ secrets.WORKFLOW_TOKEN }})"
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Checkout Progress Branch
+        uses: actions/checkout@v4.1.0
+        with:
+          repository: ${{ github.repository }}
+          ref: progress
+          token: ${{ steps.fetch-token.outputs.token }}
+          path: progress
+
+      - name: Download Test Results
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results
+
+      - name: Generate Feedback
+        id: feedback
+        uses: stripe-certification/actions/.github/actions/generate-feedbackreport@v7
+        with:
+          rubric-path: ${{ env.PROGRESS_BRANCH_RESULTS_DIR }}/rubric.json
+          test-result-path: ./test-results.json
+          learner-challenge-status-path: ${{ env.PROGRESS_BRANCH_RESULTS_DIR }}/learner_challenge_test_details.json
+
+      - name: Update Learner Status
+        if: steps.feedback.outputs.produced-progress-json == 'true'
+        run: |
+          echo ${{ steps.feedback.outputs.learner-next-milestone }} > ${{ env.PROGRESS_BRANCH_RESULTS_DIR }}/learner_challenge_test_status.txt
+          jq -n '${{ steps.feedback.outputs.learner-status }}' > ${{ env.PROGRESS_BRANCH_RESULTS_DIR }}/learner_challenge_test_details.json
+
+      - name: Commit Learner Status Files
+        uses: EndBug/add-and-commit@v9
+        if: steps.feedback.outputs.produced-progress-json == 'true'
+        with:
+          add: "learner_challenge_test_*.*"
+          author_name: ${{ secrets.APP_NAME }}
+          author_email: ${{ secrets.APP_EMAIL }}
+          cwd: progress/test/results
+          message: "Committing Test Results and Status for ${{github.workflow}} - #${{github.run_number}}"
+
+      - name: Get Last Commit Author
+        run: |
+          last_commit_author=\
+          $( curl --location --request GET 'https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits' \
+          --header 'Authorization: Bearer ${{ steps.fetch-token.outputs.token }}' |  jq -r  '.[-1].commit.author.name' )
+          echo "last-commit-author=$last_commit_author" >> $GITHUB_ENV
+          echo "challenge-bot-name=${{ secrets.APP_NAME }}" >> $GITHUB_ENV
+
+      - name: Prepare tamper notice
+        if: needs.check-implementation.outputs.tampered == 'true'
+        run: |
+          files="${{ needs.check-implementation.outputs.tampered-files }}"
+          file_list=$(echo "$files" | tr ' ' '\n' | grep -v '^$' | sed 's/^/- `/' | sed 's/$/`/')
+          notice=$(printf '%s\n\n%s\n%s\n\n%s' \
+            "⚠️ **We detected modifications to locked files and reset them to canonical versions before grading.**" \
+            "These files are locked to ensure every learner is assessed against the same tests — modifying them would compromise the integrity of your results. The following file(s) were reset:" \
+            "$file_list" \
+            "Your implementation code is untouched. Only the test and workflow files listed above were restored.")
+          echo "TAMPER_NOTICE<<EOF" >> $GITHUB_ENV
+          echo "$notice" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Add PR Comments
+        if: ${{ (env.last-commit-author != env.challenge-bot-name ) }}
+        uses: stripe-certification/actions/.github/actions/sync-feedback-comment@v6
+        env:
+          GITHUB_TOKEN: ${{ steps.fetch-token.outputs.token }}
+          AUTHOR: stripe-challenge-operator[bot]
+          CLEAN_NOISE: true
+          REPO: ${{ github.event.repository.name }}
+        with:
+          pull_request_id: ${{ github.event.pull_request.number }}
+          message: |
+            Tested ${{ github.event.pull_request.head.sha }} on ${{ needs.check-implementation.outputs.date }} ([logs](${{ needs.check-implementation.outputs.logs }}))
+
+            ${{ env.TAMPER_NOTICE }}
+
+            ${{ steps.feedback.outputs.pr-comments }}
+
+      - name: Add feedback to workflow summary
+        if: ${{ (env.last-commit-author != env.challenge-bot-name ) }}
+        run: |
+          echo "${{ steps.feedback.outputs.pr-comments }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Add automerge Label
+        if: steps.feedback.outputs.can-auto-merge == 'true'
+        working-directory: ${{ github.workspace }}/progress
+        run: |
+          echo ${{ steps.fetch-token.outputs.token }} > .githubtoken
+          gh auth login --with-token < .githubtoken
+          rm .githubtoken
+          gh label create automerge --force
+          gh pr edit ${{ github.event.pull_request.number }} --add-label "automerge"
+
+      - name: Merge PR
+        id: pr_merge
+        if: steps.feedback.outputs.can-auto-merge == 'true'
+        uses: pascalgn/automerge-action@v0.15.6
+        env:
+          GITHUB_TOKEN: ${{ steps.fetch-token.outputs.token }}
+
+      - name: Get Next Milestone Name and Number
+        if: ${{ (steps.pr_merge.outcome == 'success') && (steps.feedback.outputs.is-challenge-complete == 'false') }}
+        run: |
+          next_milestone_name=$(echo "${{ steps.feedback.outputs.learner-next-milestone }}" | cut -d "." -f 1)
+          echo "next-milestone-name=$next_milestone_name" >> $GITHUB_ENV
+          next_milestone_number=$(($(jq '.sequences | to_entries | .[] | select(.value | contains("${{ steps.feedback.outputs.learner-next-milestone }}")) | .key' < ${{ env.PROGRESS_BRANCH_RESULTS_DIR }}/rubric.json)+1))
+          echo "next-milestone-number=$next_milestone_number" >> $GITHUB_ENV
+
+      - name: Checkout Dev Branch
+        uses: actions/checkout@v4.1.0
+        if: ${{ (steps.pr_merge.outcome == 'success') }}
+        with:
+          repository: ${{ github.repository }}
+          ref: dev
+          token: ${{ steps.fetch-token.outputs.token }}
+          path: dev
+
+      - name: Create New PR
+        if: ${{ (steps.pr_merge.outcome == 'success') && (steps.feedback.outputs.is-challenge-complete == 'false') }}
+        run: |
+          echo ${{ steps.fetch-token.outputs.token }} > .githubtoken
+          gh auth login --with-token < .githubtoken
+          rm .githubtoken
+          echo -en "\n- _Milestone ${{ env.next-milestone-number }} Started On $(date)_ " >> README.md
+          git config user.name "${{ secrets.APP_NAME }}"
+          git config user.email "${{ secrets.APP_EMAIL }}"
+          git add .
+          git commit -m "Milestone ${{ env.next-milestone-number }}"
+          git push --set-upstream origin dev
+          gh pr create --base main --head dev --title "Milestone ${{ env.next-milestone-number }}" -F docs/README_${{ env.next-milestone-name }}.md
+        working-directory: ${{ github.workspace }}/dev
+
+      - name: Report Challenge Completion
+        uses: stripe-certification/actions/.github/actions/report-completion@v6
+        if: steps.feedback.outputs.is-challenge-complete == 'true'
+        with:
+          repo-name: ${{ github.event.repository.name }}
+          api-base-url: ${{ secrets.API_BASE_URL }}
+          slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Add congratulations issue
+        if: steps.feedback.outputs.is-challenge-complete == 'true'
+        run: |
+          REPO_NAME="${{ github.event.repository.name }}"
+          CHALLENGE_NAME=$(echo $REPO_NAME | cut -d '_' -f 1)
+          echo ${{ steps.fetch-token.outputs.token }} > .githubtoken
+          gh auth login --with-token < .githubtoken
+          rm .githubtoken
+          gh issue create -F docs/challenge_complete.md --title "Congratulations on completing `${CHALLENGE_NAME}_challenge`"
+        working-directory: ${{ github.workspace }}/dev

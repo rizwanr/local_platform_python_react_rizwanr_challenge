@@ -1,0 +1,371 @@
+{
+  "items": {
+    "1.1": {
+      "id": "1.1",
+      "rowId": 1,
+      "title": "Sign-up creates a Connect account with correct configuration",
+      "learner_prompt": "When a user signs up, create a Stripe Connect account and store the account ID on the user record",
+      "helptext": "Make sure you're creating a Stripe Connect account when a user signs up and storing the account ID on the user record so it appears in the page DOM.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "1.2": {
+      "id": "1.2",
+      "rowId": 2,
+      "title": "Platform Customer is created with metadata",
+      "learner_prompt": "Create a Stripe Customer on the platform account for billing when a user signs up",
+      "helptext": "Make sure you're creating a Stripe Customer on the platform account at signup and including the userId in the customer's metadata.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "1.3a": {
+      "id": "1.3a",
+      "rowId": 3,
+      "title": "Subscription exists and is active or trialing",
+      "learner_prompt": "Subscribe the instructor to the ZenFlow platform plan with a 30-day trial",
+      "helptext": "Check that you're subscribing the new user to the platform plan at signup with the correct price ($29/month) and a 30-day trial period.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "1.3b": {
+      "id": "1.3b",
+      "rowId": 4,
+      "title": "Subscription price is $29/month",
+      "learner_prompt": "Subscribe the instructor to the ZenFlow platform plan at $29/month",
+      "helptext": "Check that you're subscribing the new user to the platform plan at signup with the correct price ($29/month) and a 30-day trial period.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "1.3c": {
+      "id": "1.3c",
+      "rowId": 5,
+      "title": "Subscription trial is 30 days",
+      "learner_prompt": "Subscribe the instructor to the ZenFlow platform plan with a 30-day trial period",
+      "helptext": "Check that you're subscribing the new user to the platform plan at signup with the correct price ($29/month) and a 30-day trial period.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "1.4": {
+      "id": "1.4",
+      "rowId": 6,
+      "title": "Webhook handler validates signatures and rejects unsigned requests",
+      "learner_prompt": "Use stripe.webhooks.constructEvent to verify webhook signatures; return 400 for unsigned requests",
+      "helptext": "Make sure you're verifying webhook signatures using the Stripe library. Requests without a valid signature should be rejected with a 400.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "1.5": {
+      "id": "1.5",
+      "rowId": 7,
+      "title": "v2.core.account.updated webhook syncs chargesEnabled to the database",
+      "learner_prompt": "Handle v2.core.account.updated webhook events to sync the account's chargesEnabled status",
+      "helptext": "Make sure you're handling v2.core.account.updated events and syncing the account's charges-enabled status to the user record in your database.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "2.1": {
+      "id": "2.1",
+      "rowId": 8,
+      "title": "Account sessions endpoint returns a valid client_secret",
+      "learner_prompt": "POST /account-sessions returns a client_secret for the authenticated user's connected account",
+      "helptext": "Make sure POST /account-sessions creates an AccountSession for the authenticated user's connected account and returns the client_secret.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "2.2": {
+      "id": "2.2",
+      "rowId": 9,
+      "title": "Account sessions endpoint rejects unauthenticated requests",
+      "learner_prompt": "POST /account-sessions returns 401 when the user is not logged in",
+      "helptext": "Make sure your /account-sessions route handler uses SessionsService.getUserId(request) to authenticate the request — this will throw a 401 automatically for unauthenticated users.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "2.3": {
+      "id": "2.3",
+      "rowId": 10,
+      "title": "Account page renders notification banner and onboarding component",
+      "learner_prompt": "Display stripe-connect-notification-banner and stripe-connect-account-onboarding (or account-management) on the account page",
+      "helptext": "Check that the /account page is rendering the Stripe Connect notification banner and account onboarding (or management) components correctly. If the components appear but nothing loads inside them, check your ConnectComponentsProvider setup.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "2.4": {
+      "id": "2.4",
+      "rowId": 11,
+      "title": "Account page renders tax components",
+      "learner_prompt": "Display stripe-connect-tax-settings and stripe-connect-tax-registrations on the account page",
+      "helptext": "Check that the /account page is rendering both tax components and that they are enabled in your AccountSession configuration. If the components appear but nothing loads inside them, check your ConnectComponentsProvider setup.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "2.5": {
+      "id": "2.5",
+      "rowId": 12,
+      "title": "Payments and payouts pages render embedded components",
+      "learner_prompt": "Display stripe-connect-payments on /payments and stripe-connect-payouts on /payouts, each loading a Stripe iframe",
+      "helptext": "Make sure the payments and payouts components are rendering on their respective pages and that the Stripe Connect iframe is loading — check your ConnectComponentsProvider setup if the iframe isn't appearing.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "2.6": {
+      "id": "2.6",
+      "rowId": 13,
+      "title": "Navigation between payments and payouts works",
+      "learner_prompt": "Users can navigate between /payments and /payouts without losing the embedded components",
+      "helptext": "Make sure navigating between /payments and /payouts keeps the embedded components rendering correctly on each page — including when navigating back. If components stop rendering after back-navigation, check how your ConnectComponentsProvider handles route changes.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1a": {
+      "id": "3.1a",
+      "rowId": 14,
+      "title": "Workshop and payment link IDs are present",
+      "learner_prompt": "Create a workshop with a Stripe Payment Link and store both the paymentLinkId and paymentLinkUrl on the workshop",
+      "helptext": "Make sure your workshop creation stores both the payment link ID and URL. Check that paymentLinkId and paymentLinkUrl are present on the workshop record.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1b": {
+      "id": "3.1b",
+      "rowId": 15,
+      "title": "Payment link top-level metadata is correct",
+      "learner_prompt": "Include workshopId and instructorId in the payment link's top-level metadata",
+      "helptext": "Make sure you're setting metadata on the payment link itself with the workshopId and instructorId.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1c": {
+      "id": "3.1c",
+      "rowId": 16,
+      "title": "Payment link payment_intent_data metadata is correct",
+      "learner_prompt": "Include workshopId and instructorId in the payment link's payment_intent_data.metadata",
+      "helptext": "Make sure you're also setting metadata in payment_intent_data so that checkout sessions carry the workshopId and instructorId through to the payment intent.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1d": {
+      "id": "3.1d",
+      "rowId": 17,
+      "title": "Payment link customer_creation is always",
+      "learner_prompt": "Set customer_creation to 'always' on the payment link",
+      "helptext": "Make sure you're setting customer_creation to 'always' on the payment link so a customer record is created for every purchase.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1e": {
+      "id": "3.1e",
+      "rowId": 18,
+      "title": "Payment link application fee is 10%",
+      "learner_prompt": "Set application_fee_amount to 10% of the workshop price on the payment link",
+      "helptext": "Make sure you're calculating the application fee as 10% of the workshop price and setting it on the payment link.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1f": {
+      "id": "3.1f",
+      "rowId": 19,
+      "title": "Payment link capacity restriction is correct",
+      "learner_prompt": "Set restrictions.completed_sessions.limit to the workshop capacity on the payment link",
+      "helptext": "Make sure you're setting the completed_sessions limit on the payment link to match the workshop's capacity.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1g": {
+      "id": "3.1g",
+      "rowId": 20,
+      "title": "Payment link price amount, currency, and nickname are correct",
+      "learner_prompt": "Create a price with the correct unit_amount, currency (usd), and nickname matching the workshop title",
+      "helptext": "Check that the price on the payment link has the correct amount (in cents), currency set to 'usd', and a nickname matching the workshop title.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.1h": {
+      "id": "3.1h",
+      "rowId": 21,
+      "title": "Payment link product name is correct",
+      "learner_prompt": "Create a product whose name includes the instructor's name and the workshop title",
+      "helptext": "Make sure the product on the payment link is named with the instructor's name and workshop title (e.g. 'Jane Smith - Morning Flow').",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.2": {
+      "id": "3.2",
+      "rowId": 22,
+      "title": "Quick Setup creates multiple workshops with valid payment links",
+      "learner_prompt": "POST /workshops/quickstart creates multiple workshops, each with a paymentLinkUrl matching https://buy.stripe.com/...",
+      "helptext": "Make sure the quickstart endpoint is creating workshops with valid Payment Links — check that each workshop has a paymentLinkUrl and that the links are configured with metadata and an application fee.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "3.3": {
+      "id": "3.3",
+      "rowId": 23,
+      "title": "Payment link fee and capacity are correct across different inputs",
+      "learner_prompt": "Application fee is always 10% and capacity restriction always matches the workshop's capacity, regardless of price or capacity value",
+      "helptext": "Double-check your fee and capacity calculations — the 10% fee and the completed_sessions limit should work correctly for any price or capacity value, not just the default.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.1": {
+      "id": "4.1",
+      "rowId": 24,
+      "title": "checkout.session.completed increments attendee count (and handles edge cases)",
+      "learner_prompt": "Increment workshop.attendees when a checkout.session.completed webhook is received; handle unknown/missing workshopId gracefully without crashing",
+      "helptext": "Make sure you're handling checkout.session.completed events and incrementing the workshop's attendee count. Your handler should also return 200 gracefully (not crash) when the workshopId is missing from the metadata or doesn't match a known workshop.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.2": {
+      "id": "4.2",
+      "rowId": 25,
+      "title": "Workshop capacity is enforced — attendees cannot exceed capacity",
+      "learner_prompt": "Stop incrementing attendees once the workshop is at capacity; payment link must have a completed_sessions limit matching capacity",
+      "helptext": "Make sure you're checking the current attendee count against capacity before incrementing — once a workshop is full, additional checkout events should not add more attendees.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.3": {
+      "id": "4.3",
+      "rowId": 26,
+      "title": "Refund endpoint validates paymentIntentId",
+      "learner_prompt": "POST /workshops/:id/refund returns 400 with an error.message containing 'paymentIntentId' when the field is missing",
+      "helptext": "Make sure your refund route exists and validates that paymentIntentId is present in the request body before doing anything else.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.3b": {
+      "id": "4.3b",
+      "rowId": 27,
+      "title": "Refund endpoint awaits Stripe and propagates errors",
+      "learner_prompt": "stripe.refunds.create must be awaited — a missing await causes the endpoint to return 200 before the Stripe call completes, silently swallowing errors",
+      "helptext": "Make sure you're using await on stripe.refunds.create. Without it, the endpoint returns 200 immediately (fire-and-forget) even when the Stripe call fails. The test sends a non-existent paymentIntentId — if await is present, Stripe throws and the endpoint returns a non-200 error; if await is missing, the endpoint silently returns 200.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.4": {
+      "id": "4.4",
+      "rowId": 28,
+      "title": "Refund endpoint returns 404 for non-existent workshop",
+      "learner_prompt": "POST /workshops/:id/refund returns 404 with a JSON error body when the workshop does not exist",
+      "helptext": "Check that you're looking up the workshop before attempting a refund and returning a 404 with a JSON error body when it doesn't exist.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.5": {
+      "id": "4.5",
+      "rowId": 29,
+      "title": "Refund endpoint requires authentication",
+      "learner_prompt": "POST /workshops/:id/refund returns 401 for unauthenticated requests",
+      "helptext": "Make sure the refund route is protected by your authentication middleware — unauthenticated requests should be rejected with a 401.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.6": {
+      "id": "4.6",
+      "rowId": 30,
+      "title": "charge.dispute.created pauses payouts on the connected account",
+      "learner_prompt": "When a dispute is created, update the connected account's payout schedule to manual",
+      "helptext": "Make sure you're handling charge.dispute.created webhook events and pausing automatic payouts on the connected account when a dispute is opened.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.6b": {
+      "id": "4.6b",
+      "rowId": 31,
+      "title": "charge.dispute.created while already paused stays paused",
+      "learner_prompt": "When a second dispute is created on an account already set to manual payouts, payouts remain paused",
+      "helptext": "Make sure your dispute handler is idempotent — setting payouts to manual when they're already manual should not cause an error, and payouts should remain paused.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.7": {
+      "id": "4.7",
+      "rowId": 32,
+      "title": "charge.dispute.closed (lost) resumes payouts",
+      "learner_prompt": "When a dispute closes as lost, resume daily payouts on the connected account",
+      "helptext": "Make sure you're handling charge.dispute.closed events and resuming daily payouts on the connected account when the dispute is resolved.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    },
+    "4.8": {
+      "id": "4.8",
+      "rowId": 33,
+      "title": "charge.dispute.closed (won) resumes payouts",
+      "learner_prompt": "When a dispute closes as won, resume daily payouts on the connected account",
+      "helptext": "Make sure you're handling charge.dispute.closed events and resuming daily payouts on the connected account when the dispute is resolved.",
+      "graded_assertion": "",
+      "err": {},
+      "Status": ""
+    }
+  },
+  "labName": "Platform Node React Challenge",
+  "sequences": [
+    "milestone1.spec.ts",
+    "milestone2.spec.ts",
+    "milestone3.spec.ts",
+    "milestone4.spec.ts"
+  ],
+  "milestones": [
+    {
+      "id": "milestone1",
+      "name": "Milestone 1: Onboarding a new instructor",
+      "spec": "milestone1.spec.ts",
+      "description": "Create Stripe Connect accounts with platform billing and webhook handlers for account sync",
+      "testCount": 7
+    },
+    {
+      "id": "milestone2",
+      "name": "Milestone 2: Setting up embedded components",
+      "spec": "milestone2.spec.ts",
+      "description": "Configure AccountSession, EmbeddedComponentContext, and embedded UI components",
+      "testCount": 6
+    },
+    {
+      "id": "milestone3",
+      "name": "Milestone 3: Collecting payments for classes",
+      "spec": "milestone3.spec.ts",
+      "description": "Create workshops with Payment Links to collect customer payments",
+      "testCount": 10
+    },
+    {
+      "id": "milestone4",
+      "name": "Milestone 4: Tracking payments and handling disputes",
+      "spec": "milestone4.spec.ts",
+      "description": "Track attendees via checkout webhooks, process refunds, and handle dispute events",
+      "testCount": 10
+    }
+  ]
+}
